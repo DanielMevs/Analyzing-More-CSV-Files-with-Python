@@ -1,60 +1,65 @@
 #Daniel Mevs
 import csv
 
-
-#helper function for get_lists(), tailored to top-rated/top-grossing file columns
-def parse_file(f):
-    appended_list = []
-    file_content = csv.reader(f)
-    next(file_content)
-    temp_tup = ()
-    for row in file_content:
-        temp_tup = temp_tup + (int(row[0]), row[1], int(row[2]), float(row[3]),)
-        appended_list.append(temp_tup)
-        temp_tup = ()
-            
-    return appended_list
-
-#helper function for get_lists(), tailored to top-cast file columns
-def parse_file2(f):
-    appended_list = []
-    file_content = csv.reader(f)
-    next(file_content)
-    temp_tup = ()
-    for row in file_content:
-        temp_tup = tuple(row) 
-        #print("\n",temp_tup)
-        appended_list.append(temp_tup)
-        temp_tup = ()
-            
-    return appended_list
-    
-#returns lists based on values of csv files
-def get_lists():
-    
-    rating_list, gross_list, cast_list = [],[],[]
+#returns a list of top rated films
+def get_rating_list(rating_list):
     
     with open('imdb-top-rated.csv', 'r', encoding='utf-8') as rating_file:
-        rating_list = parse_file(rating_file)
-            
-    with open('imdb-top-grossing.csv', 'r', encoding='utf-8') as gross_file:
-        gross_list = parse_file(gross_file)
-            
-    with open('imdb-top-casts.csv', 'r', encoding='utf-8') as cast_file:
-        cast_list = parse_file2(cast_file)
+        file_content = csv.reader(rating_file)
+        next(file_content)
+        temp_tup = ()
         
-            
-    return rating_list, gross_list, cast_list
+        for row in file_content:
+            temp_tup = temp_tup + (int(row[0]), row[1], int(row[2]), float(row[3]),)
+            rating_list.append(temp_tup)
+            temp_tup = ()
 
+    return rating_list
 
-def get_dicts(rating_list, gross_list, cast_list):
+#returns a list of top grossing films
+def get_gross_list(gross_list):  
+    with open('imdb-top-grossing.csv', 'r', encoding='utf-8') as gross_file:
+        file_content = csv.reader(gross_file)
+        next(file_content)
+        temp_tup = ()
+
+        for row in file_content:
+            temp_tup = temp_tup + (int(row[0]), row[1], int(row[2]), float(row[3]),)
+            gross_list.append(temp_tup)
+            temp_tup = ()
+
+    return gross_list
+
+#returns a list of cast members
+def get_cast_list(cast_list):          
+    with open('imdb-top-casts.csv', 'r', encoding='utf-8') as cast_file:
+        file_content = csv.reader(cast_file)
+        next(file_content)
+        temp_tup = ()
+        for row in file_content:
+            temp_tup = tuple(row) 
+            #print("\n",temp_tup)
+            cast_list.append(temp_tup)
+            temp_tup = ()
+                
+    return cast_list
+
+#returns a dictionary of top rated films
+def get_rating_dict(rating_list):
+    rating_dict = {}
     rating_dict = {(column[1], column[2]) : (column[0],column[3]) for column in rating_list}
+    return rating_dict
+
+#returns a dictionary of top grossing films
+def get_gross_dict(gross_list):
     gross_dict = {(column[1], column[2]) : (column[0], column[3]) for column in gross_list}
-    cast_dict = {(column[0], int(column[1])) : (column[2:]) for column in cast_list}
+    return gross_dict
+
+#returns a dictionary of a cast
+def get_cast_dict(cast_list):
     
-    return rating_dict, gross_dict, cast_dict
-
-
+    cast_dict = {(column[0], int(column[1])) : (column[2:]) for column in cast_list}
+    return cast_dict
 
 
 def director_count(cast_dict, rating_dict):     #rating_dict can apply to top-rated as well as top-grossing dictionaries
@@ -69,7 +74,12 @@ def director_count(cast_dict, rating_dict):     #rating_dict can apply to top-ra
         count[name] = count.get(name, 0) + 1 #second parameter of .get() method specifies the value returned if the value if key is not found.
         #in this way, it counts how many times a director is mentioned by assigning a value and incrimenting 
        # print(count[name])
-    return sorted([(number, name) for name, number in count.items()], reverse=True)
+    temp_list = []
+    for name, number in count.items():
+        temp_list.append((number, name))
+    director_list = sorted(temp_list, reverse=True)
+    print(director_list)
+    return director_list
 
 def get_actor_dict(cast_dict):
     actor_dict = {} #dictionary with actor as key and movie(s) as value
@@ -89,7 +99,13 @@ def actor_rating_count(actors_dict, rating_dict): #counts the number of times a 
         for movie in movies:
             if movie in rating_keys:
                 count[actor] = count.get(actor, 0) + 1
-    return sorted([(number, name) for name, number in count.items()], reverse=True)
+    temp_list = []
+    for name, number in count.items():
+        temp_list.append((number, name))
+        #print(temp_list)
+    actor_rating_list = sorted(temp_list, reverse=True)
+
+    return actor_rating_list
 
 
 
@@ -107,43 +123,92 @@ def actor_grossing_count(gross_dict, cast_dict):
         cast_length = len(actors)
         for i, actor in enumerate(actors):
             actor_gross[actor] = actor_gross.get(actor, 0) + (((2**(cast_length-i))* gross_amount) / 31) #formula to allocate earnings per actor
-    return (sorted([(actr, amt) for amt, actr in actor_gross.items()], reverse=True))
+    temp_list = []
+    
+    for amt, actr in actor_gross.items():
+        temp_list.append((actr, amt))
+            
+    actor_grossing_list = sorted(temp_list, reverse=True)
 
-def print_directors(directors):
-    print('-'*50)
+    return actor_grossing_list
+    
+
+def print_director_rating(directors):
+    print('Directors with most movies in top-rated list')
+    top_border = '-'*50
+    print(top_border)
     print('{:<20s} | {:<5s}'.format('Directors', 'Count'))
     print('{:<20s} | {:<5s}'.format('-'*20, '-'*5))
     for i, row in enumerate(directors):
-        print('{:<20s} | {:<5d}'.format(row[1], row[0]))
+        print(i+1, ' ', '{:<20s} | {:<5d}'.format(row[1], row[0]))
         if i == 5:  #condition that will allow only the top 5 to be printed
             break
     print('\n\n')
 
+def print_director_grossing(directors):
+    print('Directors with most movies in top-grossing list')
+    top_border = '-'*50
+    print(top_border)
+    print('{:<20s} | {:<5s}'.format('Directors', 'Count'))
+    print('{:<20s} | {:<5s}'.format('-'*20, '-'*5))
+    for i, row in enumerate(directors):
+        print(i+1, ' ', '{:<20s} | {:<5d}'.format(row[1], row[0]))
+        if i == 5:  #condition that will allow only the top 5 to be printed
+            break
+    print('\n\n')
 
-def print_actors(actors, value):
-    print('-'*50)
-    print('{:<20s} | {:<5s}'.format('Actor', value))
-    if value == 'Count':
-        print('{:<20s} | {:<5s}'.format('-'*20, '-'*20))
-    else: #value is 'Amount'
-        print('{:<20s} | {:<20s}'.format('-'*20, '-'*20))
+def print_actor_grossings(actors):
+
+    print('Actors with most gross-earnings in top-grossing list')
+    top_border = '-'*50
+    title_border = '-'*20
+    print(top_border)
+
+    print('{:<20s} | {:<5s}'.format('Actor', 'Amount Grossed'))
+    print('{:<20s} | {:<20s}'.format(title_border, title_border))
+    
     for i, row in enumerate(actors):
-        if value == 'Count':
-            print('{:<20s} | {:<5d}'.format(row[1], row[0]))
-        else:   #value is 'Gross Amount'
-            print('{:<20s} | {:<20.2f}'.format(row[1], row[0]))
+        print(i+1, ' ', '{:<20s} | {:<20.2f}'.format(row[1], row[0]))
         if i == 5:  #condition that will allow only the top 5 to be printed
             break
+
     print('\n\n')
 
+def print_actor_rating(actors):
+    print('Actors with most movies in top-rated list')
+    top_border = '-'*50
+    title_border = '-'*20
+    print(top_border)
+
+    print('{:<20s} | {:<5s}'.format('Actor', 'Appearances in top-rated'))
+    print('{:<20s} | {:<5s}'.format(title_border, title_border))
+
+    for i, row in enumerate(actors):
+        print(i+1, ' ', '{:<20s} | {:<5d}'.format(row[1], row[0]))
+        if i == 5:  #condition that will allow only the top 5 to be printed
+            break
+
+    print('\n\n')
+           
 
 def main():
-    rating_list, gross_list, cast_list = get_lists()
+    
+    rating_list = []
+    rating_list = get_rating_list(rating_list)
     #print(rating_list)
-    rating_dict, gross_dict, cast_dict = get_dicts(rating_list, gross_list, cast_list)
-    #print(rating_dict)
-    #print(cast_dict)
+    gross_list = []
+    gross_list = get_gross_list(gross_list)
+    #print(gross_list)
+    cast_list = []
+    cast_list = get_cast_list(cast_list)
+    #print(cast_list)
+    rating_dict = get_rating_dict(rating_list)
+    print(rating_dict)
+    gross_dict = get_gross_dict(gross_list) 
     #print(gross_dict)
+    cast_dict = get_cast_dict(cast_list)
+    #print(cast_dict)
+    
 
     top_rated_director = director_count(cast_dict, rating_dict) #creates a dictionary of top-rated directors
     top_grossing_director = director_count(cast_dict, gross_dict) #creates a dictionary of top-rated directors
@@ -155,19 +220,15 @@ def main():
     top_rated_actors = actor_rating_count(actor_dict, rating_dict)
     top_grossing_actors = actor_grossing_count(gross_dict, cast_dict)
 
-    #print(top_grossing_actors)
-    print('Directors with most movies in top-rated list')
-    print_directors(top_rated_director)
-
-    print('Directors with most movies in top-grossing list')
-    print_directors(top_grossing_director)
-
-    print('Actors with most movies in top-rated list')
-    print_actors(top_rated_actors, 'Count')
-
-    print('Actors with most gross-earnings in top-grossing list')
-    print_actors(top_grossing_actors, 'Gross Amount')
+    #print(top_rated_actors)
+    print_director_rating(top_rated_director)
     
+    print_director_grossing(top_grossing_director)
+    
+    print_actor_rating(top_rated_actors)
+    
+    print_actor_grossings(top_grossing_actors)
+
 
 if __name__ == '__main__':
     main()
